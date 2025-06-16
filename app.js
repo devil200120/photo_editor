@@ -1,5 +1,14 @@
+// Define the ESRGAN model URL (replace with your actual hosted model path)
+const ESRGAN_URL = 'https://your-model-host/model.json';
+
 class AIImageEditor {
     constructor() {
+        this.inpaintBtn = document.getElementById('inpaint');
+this.styleTransferBtn = document.getElementById('styleTransfer');
+this.upscaleBtn = document.getElementById('upscale');
+this.autoCropBtn = document.getElementById('autoCrop');
+this.cartoonizeBtn = document.getElementById('cartoonize');
+
         // Canvas and media elements
         this.canvas = document.getElementById('mainCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -59,7 +68,7 @@ class AIImageEditor {
     
     async loadAIModels() {
         this.updateModelStatus('🤖 Loading AI models...');
-        
+    
         try {
             // Load BodyPix model for background removal
             this.bodyPixModel = await bodyPix.load({
@@ -68,19 +77,38 @@ class AIImageEditor {
                 multiplier: 0.75,
                 quantBytes: 2
             });
-            
+    
             // Load BlazeFace model for face detection
             this.blazeFaceModel = await blazeface.load();
-            
+    
+            // --- Add new models below ---
+    
+            // Style Transfer Model (Magenta)
+            this.modelStatus.innerText = "Loading Style Transfer...";
+            this.styleNet = await magenta.ArbitraryStyleTransferNetwork.create();
+    
+            // Super Resolution Model (ESRGAN)
+            this.modelStatus.innerText = "Loading Super Resolution...";
+            this.esrganNet = await tf.loadGraphModel(ESRGAN_URL);
+    
+            // --- End new models ---
+    
             console.log('AI models loaded successfully');
-            
+    
         } catch (error) {
             console.error('Error loading AI models:', error);
             throw error;
         }
     }
     
+    
     setupEventListeners() {
+        this.inpaintBtn.addEventListener('click', () => this.objectRemoval());
+this.styleTransferBtn.addEventListener('click', () => this.styleTransfer());
+this.upscaleBtn.addEventListener('click', () => this.superResolution());
+this.autoCropBtn.addEventListener('click', () => this.autoCrop());
+this.cartoonizeBtn.addEventListener('click', () => this.cartoonFilter());
+
         // File upload events
         this.uploadBtn.addEventListener('click', () => this.fileInput.click());
         this.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
@@ -279,6 +307,116 @@ class AIImageEditor {
             this.setProcessing(false);
         }
     }
+    async objectRemoval() {
+        if (!this.modelsLoaded || !this.currentImage || this.isProcessing) return;
+        this.setProcessing(true);
+        try {
+            const segmentation = await this.bodyPixModel.segmentPerson(this.canvas);
+            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            const mask = segmentation.data;
+            for (let i = 0; i < mask.length; i++) {
+                if (mask[i] === 1) { // Person pixel
+                    const idx = i * 4;
+                    // Fill with average background color (simple inpaint)
+                    imageData.data[idx] = 255;
+                    imageData.data[idx + 1] = 255;
+                    imageData.data[idx + 2] = 255;
+                }
+            }
+            this.ctx.putImageData(imageData, 0, 0);
+        } catch (error) {
+            console.error('Object removal failed:', error);
+            alert('Object removal failed. Please try again.');
+        } finally {
+            this.setProcessing(false);
+        }
+    }
+    async styleTransfer() {
+        if (!this.modelsLoaded || !this.currentImage || this.isProcessing) return;
+        this.setProcessing(true);
+        try {
+            // Assume styleNet and tf are loaded, and style image is available as 'style.jpg'
+            const contentTensor = tf.browser.fromPixels(this.canvas);
+            const styleImg = new Image();
+            styleImg.src = 'style.jpg'; // Replace with user-selected style if needed
+            await new Promise(resolve => { styleImg.onload = resolve; });
+            const styleTensor = tf.browser.fromPixels(styleImg);
+            const stylized = await this.styleNet.stylize(contentTensor, styleTensor);
+            await tf.browser.toPixels(stylized, this.canvas);
+            contentTensor.dispose();
+            styleTensor.dispose();
+            stylized.dispose();
+        } catch (error) {
+            console.error('Style transfer failed:', error);
+            alert('Style transfer failed. Please try again.');
+        } finally {
+            this.setProcessing(false);
+        }
+    }
+    async superResolution() {
+        if (!this.modelsLoaded || !this.currentImage || this.isProcessing) return;
+        this.setProcessing(true);
+        try {
+            // Assume esrganNet and tf are loaded
+            const input = tf.browser.fromPixels(this.canvas).expandDims(0).toFloat().div(255);
+            const output = this.esrganNet.predict(input).squeeze().mul(255).clipByValue(0,255).toInt();
+            await tf.browser.toPixels(output, this.canvas);
+            input.dispose();
+            output.dispose();
+        } catch (error) {
+            console.error('Super resolution failed:', error);
+            alert('Super resolution failed. Please try again.');
+        } finally {
+            this.setProcessing(false);
+        }
+    }
+    async autoCrop() {
+        if (!this.modelsLoaded || !this.currentImage || this.isProcessing) return;
+        this.setProcessing(true);
+        try {
+            const predictions = await this.blazeFaceModel.estimateFaces(this.canvas, false);
+            if (predictions.length) {
+                const {topLeft, bottomRight} = predictions[0];
+                const [x1, y1] = topLeft;
+                const [x2, y2] = bottomRight;
+                const width = x2 - x1;
+                const height = y2 - y1;
+                const imageData = this.ctx.getImageData(x1, y1, width, height);
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.ctx.putImageData(imageData, 0, 0);
+            } else {
+                alert('No face detected for auto crop.');
+            }
+        } catch (error) {
+            console.error('Auto crop failed:', error);
+            alert('Auto crop failed. Please try again.');
+        } finally {
+            this.setProcessing(false);
+        }
+    }
+    cartoonFilter() {
+        if (!this.currentImage || this.isProcessing) return;
+        this.setProcessing(true);
+        try {
+            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            // Simple cartoon effect: posterize and edge detection
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                // Posterize
+                imageData.data[i] = Math.floor(imageData.data[i] / 64) * 64;
+                imageData.data[i + 1] = Math.floor(imageData.data[i + 1] / 64) * 64;
+                imageData.data[i + 2] = Math.floor(imageData.data[i + 2] / 64) * 64;
+            }
+            // (Optional: Add edge detection for stronger effect)
+            this.ctx.putImageData(imageData, 0, 0);
+        } catch (error) {
+            console.error('Cartoon filter failed:', error);
+            alert('Cartoon filter failed. Please try again.');
+        } finally {
+            this.setProcessing(false);
+        }
+    }
+                    
     
     applyEnhancementFilter(imageData) {
         const data = imageData.data;
@@ -501,8 +639,10 @@ class AIImageEditor {
         const controls = [
             this.bgRemoveBtn, this.enhanceBtn, this.faceDetectBtn,
             this.brightnessSlider, this.contrastSlider, this.saturationSlider,
-            this.downloadBtn, this.resetBtn, ...this.filterBtns
+            this.downloadBtn, this.resetBtn, ...this.filterBtns,
+            this.inpaintBtn, this.styleTransferBtn, this.upscaleBtn, this.autoCropBtn, this.cartoonizeBtn
         ];
+        
         
         controls.forEach(control => {
             control.disabled = !enabled;
