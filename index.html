@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image & Video Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="editor-container">
+        <header class="editor-header">
+            <h1>🎨 AI-Powered Media Editor</h1>
+            <p>Transform your images and videos with machine learning</p>
+        </header>
+        
+        <main class="editor-workspace">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drop files here or click to upload</h3>
+                        <p>Supports: JPG, PNG, WebP, GIF, MP4, WebM</p>
+                        <input type="file" id="fileInput" accept="image/*,video/*" hidden>
+                        <button id="uploadBtn" class="upload-btn">Choose Files</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="media-container">
+                <div class="canvas-wrapper">
+                    <canvas id="mainCanvas"></canvas>
+                    <video id="videoPreview" controls style="display: none;"></video>
+                    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Processing with AI...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <div class="ai-controls">
+                    <h3>🤖 AI Features</h3>
+                    <div class="button-group">
+                        <button id="bgRemove" class="ai-btn" disabled>
+                            <span class="btn-icon">✂️</span>
+                            Remove Background
+                        </button>
+                        <button id="enhance" class="ai-btn" disabled>
+                            <span class="btn-icon">✨</span>
+                            AI Enhance
+                        </button>
+                        <button id="faceDetect" class="ai-btn" disabled>
+                            <span class="btn-icon">👤</span>
+                            Detect Faces
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="manual-controls">
+                    <h3>🎛️ Manual Adjustments</h3>
+                    <div class="slider-group">
+                        <div class="slider-control">
+                            <label for="brightness">Brightness</label>
+                            <input type="range" id="brightness" min="0" max="200" value="100" disabled>
+                            <span id="brightnessValue">100%</span>
+                        </div>
+                        <div class="slider-control">
+                            <label for="contrast">Contrast</label>
+                            <input type="range" id="contrast" min="0" max="200" value="100" disabled>
+                            <span id="contrastValue">100%</span>
+                        </div>
+                        <div class="slider-control">
+                            <label for="saturation">Saturation</label>
+                            <input type="range" id="saturation" min="0" max="200" value="100" disabled>
+                            <span id="saturationValue">100%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-controls">
+                    <h3>🎨 Smart Filters</h3>
+                    <div class="filter-grid">
+                        <button class="filter-btn" data-filter="vintage" disabled>Vintage</button>
+                        <button class="filter-btn" data-filter="sepia" disabled>Sepia</button>
+                        <button class="filter-btn" data-filter="blur" disabled>Blur</button>
+                        <button class="filter-btn" data-filter="sharpen" disabled>Sharpen</button>
+                        <button class="filter-btn" data-filter="grayscale" disabled>Grayscale</button>
+                        <button class="filter-btn" data-filter="negative" disabled>Negative</button>
+                    </div>
+                </div>
+                
+                <div class="export-controls">
+                    <h3>💾 Export</h3>
+                    <div class="export-options">
+                        <button id="downloadImage" class="export-btn" disabled>
+                            <span class="btn-icon">⬇️</span>
+                            Download Image
+                        </button>
+                        <button id="resetImage" class="export-btn" disabled>
+                            <span class="btn-icon">🔄</span>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="editor-footer">
+            <p>AI Models Status: <span id="modelStatus">Loading...</span></p>
+        </footer>
+    </div>
+    
+    <!-- Load TensorFlow.js and models -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.4.0/dist/body-pix.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
