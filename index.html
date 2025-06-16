@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image & Video Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="editor-header">
+            <h1>🎨 AI-Powered Media Editor</h1>
+            <p>Transform your images with advanced machine learning</p>
+            <div class="model-status-panel">
+                <div class="status-item">
+                    <span class="status-label">TensorFlow.js:</span>
+                    <span class="status" id="tfStatus">Loading...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">BodyPix:</span>
+                    <span class="status" id="bodyPixStatus">Not loaded</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">BlazeFace:</span>
+                    <span class="status" id="blazeFaceStatus">Not loaded</span>
+                </div>
+            </div>
+        </header>
+        
+        <main class="editor-workspace">
+            <div class="upload-section">
+                <div class="card">
+                    <div class="card__body">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <div class="upload-icon">📁</div>
+                                <h3>Drop files here or click to upload</h3>
+                                <p>Supports: JPG, PNG, WebP, GIF (Max 10MB)</p>
+                                <input type="file" id="fileInput" accept="image/*" hidden>
+                                <button id="uploadBtn" class="btn btn--primary">Choose Files</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="media-section">
+                <div class="card">
+                    <div class="card__body">
+                        <div class="canvas-wrapper">
+                            <canvas id="mainCanvas"></canvas>
+                            <div class="canvas-overlay">
+                                <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <p id="loadingText">Processing with AI...</p>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="progressFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="canvas-info" id="canvasInfo" style="display: none;">
+                            <span id="imageInfo"></span>
+                            <span id="memoryInfo"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <div class="card">
+                    <div class="card__body">
+                        <div class="ai-controls">
+                            <h3>🤖 AI Features</h3>
+                            <div class="button-grid">
+                                <button id="bgRemove" class="btn btn--secondary ai-btn" disabled>
+                                    <span class="btn-icon">✂️</span>
+                                    Remove Background
+                                </button>
+                                <button id="enhance" class="btn btn--secondary ai-btn" disabled>
+                                    <span class="btn-icon">✨</span>
+                                    AI Enhance
+                                </button>
+                                <button id="faceDetect" class="btn btn--secondary ai-btn" disabled>
+                                    <span class="btn-icon">👤</span>
+                                    Detect Faces
+                                </button>
+                                <button id="autoCrop" class="btn btn--secondary ai-btn" disabled>
+                                    <span class="btn-icon">🔍</span>
+                                    Smart Crop
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="manual-controls">
+                            <h3>🎛️ Manual Adjustments</h3>
+                            <div class="slider-group">
+                                <div class="slider-control">
+                                    <label for="brightness" class="form-label">Brightness</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="brightness" class="form-control" min="0" max="200" value="100" disabled>
+                                        <span id="brightnessValue" class="slider-value">100%</span>
+                                    </div>
+                                </div>
+                                <div class="slider-control">
+                                    <label for="contrast" class="form-label">Contrast</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="contrast" class="form-control" min="0" max="200" value="100" disabled>
+                                        <span id="contrastValue" class="slider-value">100%</span>
+                                    </div>
+                                </div>
+                                <div class="slider-control">
+                                    <label for="saturation" class="form-label">Saturation</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="saturation" class="form-control" min="0" max="200" value="100" disabled>
+                                        <span id="saturationValue" class="slider-value">100%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-controls">
+                            <h3>🎨 Smart Filters</h3>
+                            <div class="filter-grid">
+                                <button class="btn btn--outline filter-btn" data-filter="grayscale" disabled>⚫ Grayscale</button>
+                                <button class="btn btn--outline filter-btn" data-filter="sepia" disabled>🟤 Sepia</button>
+                                <button class="btn btn--outline filter-btn" data-filter="vintage" disabled>📸 Vintage</button>
+                                <button class="btn btn--outline filter-btn" data-filter="blur" disabled>💫 Blur</button>
+                                <button class="btn btn--outline filter-btn" data-filter="sharpen" disabled>🔹 Sharpen</button>
+                                <button class="btn btn--outline filter-btn" data-filter="negative" disabled>🔄 Negative</button>
+                            </div>
+                        </div>
+                        
+                        <div class="export-controls">
+                            <h3>💾 Export & History</h3>
+                            <div class="export-options">
+                                <button id="undoBtn" class="btn btn--outline" disabled>
+                                    <span class="btn-icon">↶</span>
+                                    Undo
+                                </button>
+                                <button id="redoBtn" class="btn btn--outline" disabled>
+                                    <span class="btn-icon">↷</span>
+                                    Redo
+                                </button>
+                                <button id="resetImage" class="btn btn--outline" disabled>
+                                    <span class="btn-icon">🔄</span>
+                                    Reset
+                                </button>
+                                <button id="downloadImage" class="btn btn--primary" disabled>
+                                    <span class="btn-icon">⬇️</span>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+    
+    <!-- Load TensorFlow.js and models -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.4.0/dist/body-pix.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
